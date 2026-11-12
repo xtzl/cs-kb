@@ -25,7 +25,15 @@
   input,select{font-family:inherit;font-size:14px;color:inherit}
   mark{background:var(--mark);border-radius:2px;padding:0 1px;color:#7c2d12}
 
-  .app{display:flex;flex-direction:column;height:100vh}
+  .app{display:flex;flex-direction:column;height:100vh;position:relative}
+
+  .boot{position:absolute;inset:64px 0 0;background:var(--bg);z-index:30;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px}
+  .boot-spin{width:26px;height:26px;border:3px solid #dbe3f0;border-top-color:var(--acc);
+    border-radius:50%;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .boot-t{font-size:14px;color:var(--tx-2)}
+  .boot-s{font-size:12px;color:var(--tx-3)}
 
   /* ---------- 顶栏 ---------- */
   .topbar{
@@ -228,6 +236,12 @@
     </div>
     <div class="topinfo"><span id="stats"></span></div>
   </header>
+
+  <div id="boot" class="boot">
+    <div class="boot-spin"></div>
+    <div class="boot-t">正在加载知识库…</div>
+    <div class="boot-s">首次打开约 1.6MB，之后会走浏览器缓存</div>
+  </div>
 
   <div class="body">
     <aside class="side">
@@ -855,6 +869,8 @@
         .map(x=>[Math.round(x.s), x.th||0, x.d.title])};
   };
 
+  const bootEl = document.getElementById('boot');
+  if(bootEl) bootEl.remove();
   run();
 })();
 </script>
