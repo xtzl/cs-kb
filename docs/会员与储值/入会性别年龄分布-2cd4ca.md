@@ -1,0 +1,26 @@
+---
+title: 入会性别年龄分布
+category: 会员与储值
+tags: 
+source: KMS
+updated: 2025-08-27
+url: https://kms.gzych.vip/webdoc/view/Pub2c9084a1963f44000198ea28bcb029b3.html
+section: 软件相关
+toc_path: 外部知识库 / 软件相关 / 新娱乐管家系统 / 新娱乐管家后台 / 总部 / 报表 / 数据分析类 / 会员分析类
+author: 梁建宁
+kms_id: 00002406
+---
+
+入会性别年龄分布
+
+��报表说明
+
+此报表用于查看会员的一些基础信息统计，可以通过设定一个入会时间区间，查看到这个时间区间里入会的对应年龄的会员数量，对应会员级别的会员数量，男女性别比例
+
+��报表样式
+
+路径：总部后台→分析→会员分析→入会性别年龄分布
+
+![](https://kms.gzych.vip/webdoc/view/actionImg/Publoadimg.do?id=2c9084a1963f44000198ea28a6ca29b0&type=med)
+
+<

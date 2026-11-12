@@ -1,0 +1,32 @@
+---
+title: 如何查询会员的预存款变更记录？
+category: 会员与储值
+tags: 
+source: KMS
+updated: 2025-08-27
+url: https://kms.gzych.vip/webdoc/view/Pub2c9084a1963f44000198ea16b1c22509.html
+section: 软件相关
+toc_path: 外部知识库 / 软件相关 / 新娱乐管家系统 / 新娱乐管家收银台 / 会员
+author: 梁建宁
+kms_id: 00002332
+---
+
+如何查询会员的预存款变更记录？
+
+应用场景
+
+查询会员的预存款储值详细变更记录
+
+操作流程
+
+路径：登录娱乐管家收银台-会员-登录会员-预存款变更
+
+1. 登录娱乐管家收银台-会员-输入会员手机号/扫描会员二维码-预存款变更
+
+![](https://kms.gzych.vip/webdoc/view/actionImg/Publoadimg.do?id=2c9084a1963f44000198ea16a36124f0&type=med)
+
+常见问题
+
+关联操作
+
+<
