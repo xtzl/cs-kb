@@ -57,7 +57,11 @@ def main():
             continue
         title = get_field(fm, "title") or path.stem
         old_cat = get_field(fm, "category") or "其他"
-        new_cat, _ = guess_category(title, strip_markdown(body))
+        # 目录名（section / toc_path）本身带业务信息，一起作为归类依据
+        section = get_field(fm, "section")
+        toc_path = get_field(fm, "toc_path")
+        hint = " ".join(x for x in (title, section, toc_path) if x)
+        new_cat, _ = guess_category(hint, strip_markdown(body))
         dist[new_cat] = dist.get(new_cat, 0) + 1
 
         if new_cat == old_cat:

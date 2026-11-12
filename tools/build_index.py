@@ -38,6 +38,41 @@ def parse_tags(raw):
     return [p.strip().strip('"\'') for p in parts if p.strip()]
 
 
+def dedupe(docs, threshold=0.72):
+    """同名文档若内容几乎一致，只保留一份（语雀和 KMS 里有大量镜像文档）。
+
+    保留规则：更新时间较新的优先；时间相同则内容更长的优先。
+    内容差异大的（比如单店版/总部版）不会被合并。
+    """
+    import difflib
+
+    groups = {}
+    for d in docs:
+        groups.setdefault(d["title"].strip(), []).append(d)
+
+    out, dropped = [], 0
+    for _, items in groups.items():
+        if len(items) == 1:
+            out.extend(items)
+            continue
+        items.sort(key=lambda x: (x.get("updated") or "", x.get("chars") or 0), reverse=True)
+        kept = []
+        for it in items:
+            body = (it.get("content") or "")[:400]
+            twin = None
+            for k in kept:
+                if difflib.SequenceMatcher(None, body, (k.get("content") or "")[:400]).ratio() >= threshold:
+                    twin = k
+                    break
+            if twin is not None:
+                twin.setdefault("dups", []).append(it.get("source") or "")
+                dropped += 1
+            else:
+                kept.append(it)
+        out.extend(kept)
+    return out, dropped
+
+
 def first_heading(body):
     for line in body.splitlines():
         m = re.match(r"^\s{0,3}#{1,3}\s*(.+)$", line)
@@ -102,6 +137,13 @@ def main():
             "chars": len(plain),
         })
         seen_cats[category] = seen_cats.get(category, 0) + 1
+
+    # 去重：语雀与 KMS 之间有大量镜像文档
+    raw_count = len(docs)
+    docs, dup_dropped = dedupe(docs)
+    seen_cats = {}
+    for d in docs:
+        seen_cats[d["category"]] = seen_cats.get(d["category"], 0) + 1
 
     # 分类顺序：配置里的顺序优先，其余追加
     ordered = [c for c in cat_order if c in seen_cats]
@@ -173,7 +215,8 @@ def main():
         "window.KB = " + json.dumps(payload, ensure_ascii=False) + ";\n",
         encoding="utf-8")
 
-    print(f"已索引 {len(docs)} 篇文档 / 共 {payload['total_chars']:,} 字")
+    print(f"已索引 {len(docs)} 篇文档 / 共 {payload['total_chars']:,} 字"
+          + (f"（合并重复 {dup_dropped} 篇，原始 {raw_count} 篇）" if dup_dropped else ""))
     print("分类分布：")
     for c in ordered:
         print(f"  - {c}: {seen_cats.get(c, 0)}")

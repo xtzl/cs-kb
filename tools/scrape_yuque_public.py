@@ -179,7 +179,7 @@ def main():
             body=body,
             category=cat,
             tags=tags,
-            source="语雀·娱乐管家",
+            source=f"语雀·{book.get('name') or '娱乐管家'}",
             url=url,
             updated=(data.get("content_updated_at") or "")[:10] or None,
             extra_meta={"section": section, "toc_path": path_str},

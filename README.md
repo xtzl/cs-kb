@@ -48,9 +48,16 @@ python tools/serve.py           # 启动界面（只监听本机）
 
 ## 三、把资料灌进来
 
-### 1. 语雀（推荐 API 直连）
+### 1. 语雀（公开库不需要 token，推荐）
 
-语雀 → 头像 → 设置 → Token → 新建，复制 token。
+**公开知识库**直接抓，不需要任何凭据（增量，可反复跑）：
+
+```bash
+python tools/scrape_yuque_public.py https://ychylb.yuque.com/staff-gcg8pk/ylgj   # 娱乐管家
+python tools/scrape_yuque_public.py https://ychylb.yuque.com/staff-gcg8pk/hg1x92 # 油菜花硬件
+```
+
+**私有知识库**才需要 token：
 
 ```bash
 set YUQUE_TOKEN=你的token
@@ -59,7 +66,7 @@ python tools/import_yuque.py                 # 全量导入
 python tools/import_yuque.py --book 客服手册  # 只导一个
 ```
 
-> 如果公司语雀不给开 API，直接在网页上「导出为 Markdown」打包下载，然后：
+> 语雀不给开 API 时，网页上「导出为 Markdown」打包下载，然后：
 > `python tools/import_local.py "下载的文件夹" --source 语雀`
 
 ### 2. 飞书 / Lark
@@ -76,7 +83,18 @@ python tools/import_feishu.py
 
 > 飞书也能在网页端「下载为 Word」，再用 `import_local.py` 导入 docx，效果一样。
 
-### 3. 公司自建知识库网站
+### 3. 公司 KMS 知识库（泛微系）
+
+```bash
+python tools/scrape_kms.py https://kms.gzych.vip                 # 全量，约 900 篇
+python tools/scrape_kms.py https://kms.gzych.vip --limit 20      # 先试跑
+python tools/scrape_kms.py https://kms.gzych.vip --max-pages 140 # 加深列表翻页
+```
+
+自动翻 `webtype/view/Pub{n}.html` 列表页、解析 `webdoc/view/Pub*.html` 正文，
+表格会转成 Markdown 管道表，图片转绝对地址。增量执行，已导入的 URL 会跳过。
+
+### 4. 其它网站 / 手工文档
 
 ```bash
 python tools/crawl_site.py "http://kb.公司域名.com/" --cookie "SESSION=xxxx" --max-pages 300
@@ -87,7 +105,7 @@ python tools/crawl_site.py "http://kb.公司域名.com/" --cookie "SESSION=xxxx"
 - 自动去掉导航、页脚这类每页都有的模板文字
 - 默认每页间隔 0.8 秒，别给公司服务器压力
 
-### 4. 手工写的文档
+### 5. 手工写的文档
 
 复制 `文档模板.md` 到 `docs/` 下，改个名，填内容。
 格式就是普通的 Markdown，开头那段 `---` 之间是属性：

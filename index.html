@@ -133,6 +133,8 @@
   .card .m{display:flex;gap:8px;align-items:center;margin-top:7px;font-size:11.5px;color:var(--tx-3);flex-wrap:wrap}
   .pill{background:var(--acc-soft);color:#1d4ed8;border-radius:5px;padding:1px 6px;font-size:11px}
   .pill.src{background:#f1f3f6;color:var(--tx-2)}
+  .src-tag{font-size:10.5px;padding:1px 5px;border-radius:4px;background:#eef1f5;
+    color:#5b6472;border:1px solid #e3e7ee;white-space:nowrap}
   .star{color:#e0a800}
   .empty{padding:40px 20px;text-align:center;color:var(--tx-3);font-size:13px}
 
@@ -288,6 +290,14 @@
   let list = [];
 
   const stripEmoji = s => (s||'').replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}]/gu,'').trim();
+  // 来源短名：卡片上区分同名文档（语雀 / KMS 里常有同一篇）
+  const shortSrc = s => {
+    if(!s) return '';
+    if(s.indexOf('KMS')!==-1) return 'KMS';
+    if(s.indexOf('硬件')!==-1) return '语雀硬件';
+    if(s.indexOf('语雀')!==-1) return '语雀';
+    return s;
+  };
 
   // 疑问词 / 口水词，搜索前先剥掉，让口语化提问也能命中
   const STOP = ['怎么处理','如何处理','怎么办','怎么样','怎么弄','是什么原因','为什么','如何','是什么',
@@ -617,6 +627,7 @@
           '<div class="t">'+(favs.has(d.id)?'<span class="star">★ </span>':'')+esc(d.title)+'</div>'+
           '<div class="snip">'+snip+'</div>'+
           '<div class="m"><span class="pill">'+esc(d.category)+'</span>'+
+          (d.source?'<span class="src-tag">'+esc(shortSrc(d.source))+'</span>':'')+
           (d.section?'<span style="color:#8b94a1">'+
              esc(stripEmoji(d.toc_path? d.toc_path.split(' / ').slice(-2).join(' › ') : d.section))+'</span>':'')+
           (d.tags||[]).slice(0,2).map(t=>'<span data-tag="'+esc(t)+'" style="cursor:pointer">#'+esc(t)+'</span>').join('')+
@@ -635,6 +646,7 @@
       '<h2>按业务板块浏览</h2><div class="grid">'+cards+'</div>'+
       '<h2>最近更新</h2><div class="recent">'+recent.map(d=>
         '<button data-open="'+esc(d.id)+'"><span class="pill">'+esc(d.category)+'</span>'+
+        '<span class="src-tag" style="flex:0 0 auto">'+esc(shortSrc(d.source))+'</span>'+
         '<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+esc(d.title)+'</span>'+
         '<span class="dt">'+esc(d.updated||'')+'</span></button>').join('')+'</div>';
   }
@@ -732,6 +744,7 @@
         (d.source?'<span>来源：'+esc(d.source)+'</span>':'')+
         (d.updated?'<span>更新：'+esc(d.updated)+'</span>':'')+
         (d.toc_path?'<span style="color:#9aa3af;font-size:11.5px">📁 '+esc(d.toc_path)+'</span>':'')+
+        (d.dups&&d.dups.length?'<span style="color:#9aa3af;font-size:11.5px" title="语雀与 KMS 里存在同内容文档，已合并展示">另有 '+d.dups.length+' 份同内容副本</span>':'')+
         (d.url?'<a href="'+esc(d.url)+'" target="_blank" rel="noopener">打开原文 ↗</a>':'')+
         '<div class="rd-act">'+
           '<button class="btn" id="btnFav">'+(favs.has(d.id)?'已收藏 ★':'收藏 ☆')+'</button>'+
