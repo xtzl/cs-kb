@@ -11,6 +11,7 @@
   列表页 webtype/view/Pub{n}.html 每页 10 篇，翻页直到没有新文档；
   正文页 webdoc/view/Pub<id>.html，正文在 <div class="ke-content"> 里。
 """
+import os
 import re
 import sys
 import time
@@ -31,11 +32,13 @@ ENT = {"&nbsp;": " ", "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": '"',
        "&hellip;": "…", "&times;": "×", "&middot;": "·"}
 
 
-def get(url, timeout=30, retries=2):
+def get(url, timeout=30, retries=2, cookie=""):
     for attempt in range(retries + 1):
         try:
-            req = urllib.request.Request(url, headers={
-                "User-Agent": UA, "Accept-Language": "zh-CN,zh;q=0.9"})
+            headers = {"User-Agent": UA, "Accept-Language": "zh-CN,zh;q=0.9"}
+            if cookie:
+                headers["Cookie"] = cookie
+            req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=timeout) as r:
                 raw = r.read()
             for enc in ("utf-8", "gbk", "gb18030"):
@@ -152,30 +155,89 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--max-pages", type=int, default=80, help="列表最多翻多少页")
     ap.add_argument("--delay", type=float, default=0.4)
+    ap.add_argument("--cookie", default=os.environ.get("KMS_COOKIE", ""),
+                    help="登录态 Cookie（部分文档需登录才能看，匿名会返回『文档知识不存在』）")
+    ap.add_argument("--by-category", action="store_true",
+                    help="按分类递归抓取（全局列表最多只返回约 1000 篇，超出部分只能用这个）")
     ap.add_argument("--force", action="store_true")
     args = ap.parse_args()
 
     base = args.base.rstrip("/")
-    print(f"扫描列表：{base}/webtype/view/Pub1.html")
 
-    ids, order = [], []
-    for page in range(1, args.max_pages + 1):
-        url = f"{base}/webtype/view/Pub{page}.html"
-        html = get(url)
-        if not html:
-            print(f"  第 {page} 页取不到，停止翻页")
-            break
-        found = re.findall(r"webdoc/view/Pub([0-9a-f]{20,})\.html", html)
-        new = [x for x in dict.fromkeys(found) if x not in ids]
-        if not new:
-            print(f"  第 {page} 页无新文档，翻页结束")
-            break
-        for x in new:
-            ids.append(x)
-            order.append(x)
-        print(f"  第 {page} 页 +{len(new)}，累计 {len(ids)}")
-        time.sleep(args.delay)
+    order = []
+    if args.by_category:
+        # 从「知识」「专区」「专题」三个入口出发，BFS 收集所有分类，再逐个分类翻页
+        bases, queue, seen_pages = [], [], set()
+        for seed in ("webtype/view/Pub1.html", "webzone/Publist.html", "webspecial/Publist.html",
+                     "home/Pubindex.html"):
+            html = get(f"{base}/{seed}", cookie=args.cookie)
+            if not html:
+                continue
+            # 入口页本身就是一页列表，先记下来
+            queue.append(seed.rsplit("/", 1)[0] + "/")
+            for m in re.finditer(r"(?:webtype|webzone|webspecial)/(view[0-9a-f]{16,}|[zZ]one[0-9a-f]{10,})/", html):
+                queue.append(m.group(0))
+            for m in re.finditer(r'href="((?:webtype|webzone|webspecial)/[^"]+/)(?:Pub|Publist)', html):
+                queue.append(m.group(1))
+            time.sleep(args.delay * 0.5)
 
+        queue = list(dict.fromkeys(queue))
+        while queue and len(bases) < 300:
+            b = queue.pop(0)
+            if b in bases:
+                continue
+            bases.append(b)
+            html = get(f"{base}/{b}Pub1.html", cookie=args.cookie)
+            if not html:
+                html = get(f"{base}/{b}Publist.html", cookie=args.cookie)
+            if not html:
+                continue
+            for m in re.finditer(r'href="((?:webtype|webzone|webspecial)/[^"]+/)(?:Pub|Publist)\d*\.html', html):
+                nb = m.group(1)
+                if nb not in bases and nb not in queue:
+                    queue.append(nb)
+            for m in re.finditer(r'href="(webtype/view[0-9a-f]{16,}/)Pub\d+\.html', html):
+                nb = m.group(1)
+                if nb not in bases and nb not in queue:
+                    queue.append(nb)
+            time.sleep(args.delay * 0.5)
+        print(f"发现 {len(bases)} 个分类入口")
+
+        for i, b in enumerate(bases, 1):
+            before = len(order)
+            for page in range(1, args.max_pages + 1):
+                key = f"{b}Pub{page}"
+                if key in seen_pages:
+                    break
+                seen_pages.add(key)
+                html = get(f"{base}/{b}Pub{page}.html", cookie=args.cookie)
+                if not html:
+                    break
+                found = re.findall(r"webdoc/view/Pub([0-9a-f]{20,})\.html", html)
+                new = [x for x in dict.fromkeys(found) if x not in order]
+                if not new:
+                    break
+                order.extend(new)
+                time.sleep(args.delay)
+            print(f"  [{i}/{len(bases)}] {b} +{len(order) - before}，累计 {len(order)}")
+    else:
+        print(f"扫描列表：{base}/webtype/view/Pub1.html")
+        for page in range(1, args.max_pages + 1):
+            url = f"{base}/webtype/view/Pub{page}.html"
+            html = get(url, cookie=args.cookie)
+            if not html:
+                print(f"  第 {page} 页取不到，停止翻页")
+                break
+            found = re.findall(r"webdoc/view/Pub([0-9a-f]{20,})\.html", html)
+            new = [x for x in dict.fromkeys(found) if x not in order]
+            if not new:
+                print(f"  第 {page} 页无新文档，翻页结束")
+                break
+            order.extend(new)
+            print(f"  第 {page} 页 +{len(new)}，累计 {len(order)}")
+            time.sleep(args.delay)
+
+    ids = order
     print(f"共发现 {len(ids)} 篇文档")
     done = set() if args.force else existing_urls()
 
@@ -188,7 +250,7 @@ def main():
         if url in done:
             skip += 1
             continue
-        html = get(url)
+        html = get(url, cookie=args.cookie)
         if not html:
             print(f"  ! 取不到 {url}")
             fail += 1
